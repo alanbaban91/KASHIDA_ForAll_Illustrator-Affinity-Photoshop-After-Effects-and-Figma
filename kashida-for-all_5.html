@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KASHIDA FOR ALL — Arabic & Kurdish Elongation Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<!-- ARABIC FONT LIBRARY (Google Fonts) -->
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;700&family=Almarai:wght@400;800&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Baloo+Bhaijaan+2:wght@400;700&family=Beiruti:wght@400;700&family=Blaka&family=Cairo:wght@400;700;900&family=Cairo+Play:wght@400;700&family=Changa:wght@400;700&family=El+Messiri:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Gulzar&family=Harmattan:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;700&family=Jomhuria&family=Katibeh&family=Kufam:wght@400;700&family=Lalezar&family=Lateef:wght@400;700&family=Lemonada:wght@400;700&family=Mada:wght@400;800&family=Markazi+Text:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Marhey:wght@400;700&family=Mirza:wght@400;700&family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&family=Rakkas&family=Readex+Pro:wght@400;700&family=Reem+Kufi:wght@400;700&family=Rubik:wght@400;800&family=Ruwudu:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700;900&family=Vazirmatn:wght@400;700&family=Vibes&family=Zain:wght@400;800&family=Qahiri&family=Amiri+Quran&family=Fustat:wght@400;700&family=Rubik+Beastly&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#efeae0;      /* warm paper */
+    --grid:rgba(20,20,20,.07);
+    --ink:#141414;        /* near black */
+    --violet:#5b47f2;     /* electric violet highlight */
+    --white:#ffffff;
+    --display:'Archivo Black',sans-serif;
+    --ui:'Archivo',sans-serif;
+    --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--cream);color:var(--ink);font-family:var(--ui);min-height:100%}
+  body{padding-bottom:90px;overflow-x:hidden}
+
+  /* scattered square grid backdrop */
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:56px 56px;
+  }
+  .topbar,.hairline,header,main,footer{position:relative;z-index:1}
+
+  /* ---------- HEADER ---------- */
+  .topbar{
+    max-width:1240px;margin:0 auto;padding:26px 24px 0;
+    display:flex;justify-content:center;
+  }
+  .topbar span{
+    font-family:var(--display);font-size:14px;letter-spacing:.12em;text-transform:uppercase;
+    background:var(--ink);color:var(--cream);padding:10px 14px;line-height:1.05;text-align:center;
+  }
+  .hairline{display:none}
+
+  header{max-width:1240px;margin:0 auto;padding:44px 24px 0;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .eyebrow{
+    font-family:var(--display);font-size:11px;letter-spacing:.3em;text-transform:uppercase;
+    color:var(--violet);margin-bottom:18px;
+  }
+  h1{
+    font-family:var(--display);
+    font-size:clamp(44px,9vw,110px);
+    line-height:.95;letter-spacing:-0.02em;text-transform:uppercase;
+    color:var(--ink);
+  }
+  h1 .hl{
+    background:var(--violet);color:var(--white);padding:0 .12em;
+    display:inline-block;transform:rotate(-1.5deg);position:relative;
+  }
+  h1 .star{
+    color:var(--violet);font-size:.35em;vertical-align:super;
+  }
+  .sub-block{max-width:560px;margin-top:26px;text-align:center}
+  .sub-block h3{
+    font-family:var(--display);font-size:clamp(16px,2.2vw,22px);color:var(--ink);
+    line-height:1.2;text-transform:uppercase;letter-spacing:.02em;
+  }
+  .sub-block h3 b{background:var(--violet);color:var(--white);padding:0 .18em;font-weight:inherit}
+  .sub-block p{
+    margin-top:14px;font-size:13.5px;line-height:1.75;color:var(--ink);font-weight:500;max-width:52ch;
+    margin-left:auto;margin-right:auto;
+  }
+  .ar-title{
+    font-family:'Reem Kufi',sans-serif;direction:rtl;color:var(--ink);
+    font-size:clamp(20px,3vw,30px);margin-top:26px;font-weight:700;
+  }
+  .ar-title span{background:var(--violet);color:var(--white);padding:2px 10px;display:inline-block;transform:rotate(1deg)}
+
+  /* ---------- LAYOUT ---------- */
+  main{max-width:1240px;margin:48px auto 0;padding:0 24px;display:grid;grid-template-columns:380px minmax(0,1fr);gap:26px;align-items:start}
+  .stack{position:sticky;top:20px;display:flex;flex-direction:column;gap:26px}
+  @media(max-width:980px){main{grid-template-columns:1fr}.stack{position:static}}
+
+  .panel{
+    background:var(--cream);border:2px solid var(--ink);padding:24px;
+    box-shadow:6px 6px 0 var(--ink);
+  }
+  .panel h2{
+    font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    margin-bottom:18px;color:var(--ink);text-align:center;
+  }
+  .panel h2 em{font-style:normal;background:var(--violet);color:var(--white);padding:1px 8px}
+
+  /* ---------- CONTROLS ---------- */
+  .field{margin-bottom:22px}
+  .field>label{display:block;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);margin-bottom:9px}
+  .seg{display:flex;border:2px solid var(--ink);background:var(--white)}
+  .seg button{
+    flex:1;padding:12px 6px;background:transparent;border:none;color:var(--ink);
+    font-family:var(--display);font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+    cursor:pointer;transition:.12s;
+  }
+  .seg button+button{border-left:2px solid var(--ink)}
+  .seg button.active{background:var(--violet);color:var(--white)}
+  .seg button:focus-visible{outline:2px solid var(--violet);outline-offset:-3px}
+
+  select,input[type=number]{
+    width:100%;padding:12px;background:var(--white);border:2px solid var(--ink);color:var(--ink);
+    border-radius:0;font-family:var(--ui);font-size:14px;font-weight:600;
+  }
+  select:focus,input:focus,textarea:focus{outline:3px solid var(--violet);outline-offset:-1px}
+  input[type=range]{width:100%;accent-color:var(--violet);height:24px}
+  .range-row{display:flex;align-items:center;gap:12px}
+  .range-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--white);background:var(--violet);padding:2px 8px;min-width:48px;text-align:center}
+  .hint{font-size:11.5px;color:rgba(20,20,20,.6);margin-top:7px;line-height:1.55}
+
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:0;border:2px solid var(--ink);background:var(--white)}
+  .presets button{
+    padding:12px 8px;background:transparent;border:none;color:var(--ink);
+    font-family:var(--display);font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    cursor:pointer;transition:.12s;
+  }
+  .presets button:nth-child(2),.presets button:nth-child(4){border-left:2px solid var(--ink)}
+  .presets button:nth-child(3),.presets button:nth-child(4){border-top:2px solid var(--ink)}
+  .presets button:hover{background:var(--violet);color:var(--white)}
+
+  .toggle{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink);margin-top:10px}
+  .toggle:first-of-type{margin-top:0}
+  .toggle input{accent-color:var(--violet);width:17px;height:17px}
+
+  optgroup{font-family:var(--ui);color:var(--violet);font-size:12px;background:var(--white)}
+  option{color:var(--ink);background:var(--white)}
+
+  /* ---------- EDITOR ---------- */
+  textarea{
+    width:100%;min-height:130px;resize:vertical;padding:18px;border-radius:0;
+    background:var(--white);border:2px solid var(--ink);color:var(--ink);
+    font-size:21px;line-height:2;direction:rtl;text-align:right;font-family:'Noto Naskh Arabic',serif;
+  }
+
+  .preview-wrap{
+    background:var(--white);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--violet);
+  }
+  .preview-head{
+    display:flex;justify-content:center;align-items:center;padding:14px 20px;gap:10px;flex-wrap:wrap;
+    border-bottom:2px solid var(--ink);background:var(--cream);
+  }
+  .preview-head .lbl{
+    font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+    background:var(--violet);color:var(--white);padding:4px 10px;
+  }
+  .btn{
+    padding:11px 22px;border-radius:0;border:2px solid var(--ink);
+    font-family:var(--display);font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+    cursor:pointer;transition:.12s;
+  }
+  .btn.primary{background:var(--ink);color:var(--white)}
+  .btn.primary:hover{background:var(--violet);border-color:var(--violet)}
+  .btn.ghost{background:var(--white);color:var(--ink)}
+  .btn.ghost:hover{background:var(--violet);color:var(--white);border-color:var(--violet)}
+
+  #preview{
+    padding:30px 28px 38px;direction:rtl;text-align:center;line-height:2.5;
+    font-size:36px;word-break:keep-all;overflow-wrap:anywhere;min-height:130px;color:var(--ink);
+  }
+  #preview .joint{cursor:pointer}
+  #preview .joint:hover{background:rgba(91,71,242,.18)}
+  #preview .kashida{color:var(--violet)}
+  #preview.hide-highlight .kashida{color:inherit}
+
+  .before{
+    padding:16px 28px;border-top:2px dashed var(--ink);direction:rtl;text-align:center;
+    color:rgba(20,20,20,.45);font-size:20px;line-height:2;display:none;
+  }
+  .before.show{display:block}
+
+  .statsbar{display:flex;gap:22px;padding:13px 20px;border-top:2px solid var(--ink);flex-wrap:wrap;align-items:center;justify-content:center;background:var(--cream)}
+  .stat{font-family:var(--mono);font-size:12px;color:var(--ink)}
+  .stat b{font-weight:600;color:var(--violet)}
+  .manual-tip{font-size:11.5px;color:rgba(20,20,20,.6)}
+
+  /* font gallery strip */
+  .gallery{display:flex;gap:0;overflow-x:auto;border:2px solid var(--ink);background:var(--white)}
+  .gallery button{
+    flex:0 0 auto;padding:12px 18px;background:transparent;border:none;border-left:2px solid var(--ink);
+    color:var(--ink);cursor:pointer;font-size:20px;direction:rtl;transition:.12s;
+  }
+  .gallery button:first-child{border-left:none}
+  .gallery button:hover{background:var(--cream)}
+  .gallery button.on{background:var(--violet);color:var(--white)}
+  .gallery button small{display:block;font-family:var(--ui);font-size:9px;font-weight:700;direction:ltr;text-transform:uppercase;letter-spacing:.1em;margin-top:3px;opacity:.75}
+
+  .toast{
+    position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--violet);color:var(--white);padding:13px 30px;border-radius:0;
+    font-family:var(--display);font-size:12px;text-transform:uppercase;letter-spacing:.12em;
+    opacity:0;transition:.2s;pointer-events:none;z-index:9;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:640px){
+    #preview{font-size:26px !important;padding:22px 16px 26px}
+    .preview-head{flex-direction:column}
+    .btn{width:100%}
+    textarea{font-size:18px}
+    .panel{padding:18px;box-shadow:4px 4px 0 var(--ink)}
+  }
+
+  footer{max-width:1240px;margin:52px auto 0;padding:0 24px;text-align:center}
+  footer .wordmark{
+    font-family:var(--display);font-size:clamp(20px,3.4vw,34px);letter-spacing:.02em;text-transform:uppercase;color:var(--ink);
+  }
+  footer .wordmark b{background:var(--violet);color:var(--white);padding:0 .18em;font-weight:inherit;display:inline-block;transform:rotate(-1deg)}
+  footer p{font-family:var(--display);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink);margin-top:12px}
+  footer .credit{margin-top:16px;font-family:var(--ui);font-size:12px;letter-spacing:.04em;text-transform:none;color:rgba(20,20,20,.75)}
+  footer .credit a{color:var(--violet);text-decoration:none;border-bottom:2px solid var(--violet);font-weight:700}
+  footer .credit a:hover{color:var(--ink);border-color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="topbar"><span>KA<br>SH</span></div>
+
+<header>
+  <div class="eyebrow">This is Kashida for All</div>
+  <h1><span class="hl">KASHIDA</span><span class="star">*</span><br>FOR ALL<br>CREATIVES</h1>
+  <div class="sub-block">
+    <h3>Stretch with <b>rules</b> — balance with intent</h3>
+    <p>A rule-based elongation engine for Arabic and Kurdish Sorani. Pick a mode, tune the intensity, click any joint to adjust by hand, then copy the result straight into Illustrator, Figma, or After Effects. Free for the creative community.</p>
+  </div>
+  <div class="ar-title"><span>كـــشـــيـــدة</span> بۆ هەمـــووان</div>
+</header>
+
+<main>
+  <!-- ============ CONTROLS ============ -->
+  <div class="panel">
+    <h2><em>Engine</em></h2>
+
+    <div class="field">
+      <label>Mode</label>
+      <div class="seg" id="modeSeg">
+        <button data-mode="logo" class="active">Logo</button>
+        <button data-mode="balance">Balance</button>
+        <button data-mode="fit">Fit</button>
+      </div>
+      <p class="hint" id="modeHint">Logo: one dramatic stretch per word — classic calligraphic emphasis.</p>
+    </div>
+
+    <div class="field">
+      <label>Intensity — kashida length</label>
+      <div class="range-row">
+        <input type="range" id="intensity" min="1" max="14" value="4">
+        <span class="range-val" id="intensityVal">4</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Coverage — joints stretched</label>
+      <div class="range-row">
+        <input type="range" id="coverage" min="0" max="100" value="35">
+        <span class="range-val" id="coverageVal">35%</span>
+      </div>
+      <p class="hint">Logo mode ignores this — it always picks the single best joint per word.</p>
+    </div>
+
+    <div class="field" id="fitField" style="display:none">
+      <label>Target line width (characters)</label>
+      <input type="number" id="fitWidth" min="10" max="200" value="40">
+      <p class="hint">Each line is padded with kashidas until it reaches roughly this length.</p>
+    </div>
+
+    <div class="field">
+      <label>Presets</label>
+      <div class="presets">
+        <button data-preset="subtle">Subtle</button>
+        <button data-preset="balanced">Balanced</button>
+        <button data-preset="dramatic">Dramatic</button>
+        <button data-preset="logotype">Logotype</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Rules</label>
+      <label class="toggle"><input type="checkbox" id="ruleSeat" checked> Prefer classical seat letters (س ش ص ف ق ك…)</label>
+      <label class="toggle"><input type="checkbox" id="ruleShort" checked> Skip short words (&lt; 3 letters)</label>
+      <label class="toggle"><input type="checkbox" id="ruleLast" checked> Never stretch a word's final joint</label>
+      <label class="toggle"><input type="checkbox" id="highlight" checked> Mark kashidas in black</label>
+    </div>
+
+    <div class="field">
+      <label>Font — full Google Arabic library</label>
+      <select id="fontSel">
+        <optgroup label="— Naskh / Text">
+          <option value="'Noto Naskh Arabic',serif" selected>Noto Naskh Arabic</option>
+          <option value="'Amiri',serif">Amiri</option>
+          <option value="'Amiri Quran',serif">Amiri Quran</option>
+          <option value="'Scheherazade New',serif">Scheherazade New</option>
+          <option value="'Lateef',serif">Lateef</option>
+          <option value="'Harmattan',sans-serif">Harmattan</option>
+          <option value="'Markazi Text',serif">Markazi Text</option>
+          <option value="'Ruwudu',serif">Ruwudu</option>
+          <option value="'Vazirmatn',sans-serif">Vazirmatn</option>
+        </optgroup>
+        <optgroup label="— Kufi / Geometric">
+          <option value="'Noto Kufi Arabic',sans-serif">Noto Kufi Arabic</option>
+          <option value="'Reem Kufi',sans-serif">Reem Kufi</option>
+          <option value="'Kufam',sans-serif">Kufam</option>
+          <option value="'Qahiri',sans-serif">Qahiri</option>
+        </optgroup>
+        <optgroup label="— Modern Sans">
+          <option value="'Cairo',sans-serif">Cairo</option>
+          <option value="'Cairo Play',sans-serif">Cairo Play</option>
+          <option value="'Tajawal',sans-serif">Tajawal</option>
+          <option value="'Almarai',sans-serif">Almarai</option>
+          <option value="'Readex Pro',sans-serif">Readex Pro</option>
+          <option value="'IBM Plex Sans Arabic',sans-serif">IBM Plex Sans Arabic</option>
+          <option value="'Noto Sans Arabic',sans-serif">Noto Sans Arabic</option>
+          <option value="'Alexandria',sans-serif">Alexandria</option>
+          <option value="'Mada',sans-serif">Mada</option>
+          <option value="'Rubik',sans-serif">Rubik</option>
+          <option value="'Zain',sans-serif">Zain</option>
+          <option value="'Fustat',sans-serif">Fustat</option>
+          <option value="'Beiruti',sans-serif">Beiruti</option>
+          <option value="'Changa',sans-serif">Changa</option>
+          <option value="'Baloo Bhaijaan 2',sans-serif">Baloo Bhaijaan 2</option>
+          <option value="'Lemonada',cursive">Lemonada</option>
+        </optgroup>
+        <optgroup label="— Display / Headline">
+          <option value="'El Messiri',sans-serif">El Messiri</option>
+          <option value="'Lalezar',cursive">Lalezar</option>
+          <option value="'Jomhuria',cursive">Jomhuria</option>
+          <option value="'Rakkas',cursive">Rakkas</option>
+          <option value="'Katibeh',cursive">Katibeh</option>
+          <option value="'Mirza',cursive">Mirza</option>
+          <option value="'Marhey',cursive">Marhey</option>
+          <option value="'Blaka',cursive">Blaka</option>
+          <option value="'Rubik Beastly',cursive">Rubik Beastly</option>
+          <option value="'Vibes',cursive">Vibes</option>
+        </optgroup>
+        <optgroup label="— Calligraphic / Nastaliq">
+          <option value="'Aref Ruqaa',serif">Aref Ruqaa</option>
+          <option value="'Gulzar',serif">Gulzar (Nastaliq)</option>
+          <option value="'Noto Nastaliq Urdu',serif">Noto Nastaliq Urdu</option>
+        </optgroup>
+      </select>
+      <p class="hint">Naskh &amp; Sans families stretch cleanest. Nastaliq styles raise the connection above the baseline, so kashidas can look uneven there.</p>
+    </div>
+
+    <div class="field">
+      <label>Preview size</label>
+      <div class="range-row">
+        <input type="range" id="fontSize" min="18" max="90" value="36">
+        <span class="range-val" id="fontSizeVal">36</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ EDITOR ============ -->
+  <div class="stack">
+    <div class="panel">
+      <h2>Input — Arabic / کوردی</h2>
+      <textarea id="input" spellcheck="false">نحن لا نكتب الحروفَ لكي نقول شيئًا فحسب، بل لكي نترك جزءًا من وجودنا في العالم. فكلُّ حرفٍ هو محاولةٌ صغيرةٌ لمقاومة النسيان، وكلُّ كلمةٍ هي شكلٌ آخر للرغبة الإنسانية في البقاء. وربما لهذا السبب تبدو الحروفُ هادئةً إلى هذا الحد؛ لأنّها تعرف سرًّا لا نعرفه نحن: أنَّ ما يُكتَب بصدقٍ لا يموت، بل يظلُّ معلقًا بين الزمن والذاكرة، يهمس لكلِّ عابرٍ بأنَّ أحدًا كان هنا، وشعر، وفكّر، وترك أثرًا يشبه الضوء.</textarea>
+      <p class="hint">Multi-line supported — every line is processed on its own.</p>
+    </div>
+
+    <div class="panel" style="padding-bottom:18px">
+      <h2>Quick font swap</h2>
+      <div class="gallery" id="gallery"></div>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="preview-head">
+        <span class="lbl">Output</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="compareBtn">Compare</button>
+          <button class="btn ghost" id="resetManual">Reset edits</button>
+          <button class="btn primary" id="copyBtn">Copy text</button>
+        </div>
+      </div>
+      <div id="preview" dir="rtl"></div>
+      <div class="before" id="beforeRow"></div>
+      <div class="statsbar">
+        <span class="stat">kashidas <b id="stKash">0</b></span>
+        <span class="stat">chars <b id="stChars">0</b></span>
+        <span class="stat">manual edits <b id="stManual">0</b></span>
+        <span class="manual-tip">click any joint in the preview to add / remove a kashida by hand</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wordmark"><b>Kashida</b> for All</div>
+  <p>Arabic + Kurdish · 40 Google Fonts · Free Forever</p>
+  <p class="credit">Written by <b>Alan Baban</b> — <a href="mailto:alanbaban@33studio.org">alanbaban@33studio.org</a></p>
+</footer>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+(() => {
+const TATWEEL = '\u0640';
+
+/* ---------- joining data ----------
+   Letters that do NOT connect to the following letter:
+   Arabic: ا أ إ آ ٱ د ذ ر ز و ؤ ة ى ء
+   Kurdish Sorani: ڕ ژ ۆ ە
+*/
+const NON_FORWARD = new Set([...'اأإآٱدذرزوؤةىءڕژۆە']);
+const NO_JOIN_AT_ALL = new Set([...'ء']);
+const SEAT = new Set([...'سشصضفقكکلمنبتثپيیهھگچعغحخجطظ']);
+const isArabicLetter = ch => /[\u0621-\u064A\u0671-\u06D3\u06D5\u06EE\u06EF\u06FA-\u06FF\u0750-\u077F]/.test(ch) && ch !== TATWEEL;
+
+function canJoin(a,b){
+  if(!isArabicLetter(a) || !isArabicLetter(b)) return false;
+  if(NON_FORWARD.has(a) || NO_JOIN_AT_ALL.has(a) || NO_JOIN_AT_ALL.has(b)) return false;
+  if(a === 'ل' && ['ا','أ','إ','آ','ٱ'].includes(b)) return false; // lam-alef ligature
+  return true;
+}
+
+const DIAC = /[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED]/;
+
+function wordJoints(word){
+  const joints = [];
+  const chars = [...word];
+  for(let i=0;i<chars.length-1;i++){
+    if(DIAC.test(chars[i])) continue;
+    let j = i+1;
+    while(j < chars.length && DIAC.test(chars[j])) j++;
+    if(j >= chars.length) break;
+    if(canJoin(chars[i], chars[j])) joints.push({idx:j, after:chars[i], before:chars[j]});
+  }
+  return joints;
+}
+function countLetters(word){ return [...word].filter(isArabicLetter).length; }
+function scoreJoint(j, pos, total, opts){
+  let s = 0;
+  if(opts.seat && SEAT.has(j.after)) s += 3;
+  s += (pos+1)/total * 2;
+  if(SEAT.has(j.before)) s += 1;
+  return s;
+}
+
+/* ---------- engine ---------- */
+function process(text, o){
+  const clean = text.replace(new RegExp(TATWEEL,'g'),'');
+  return clean.split('\n').map(line => processLine(line, o)).join('\n');
+}
+function processLine(line, o){
+  const tokens = line.split(/(\s+)/);
+  let out = tokens.map(tok => /^\s*$/.test(tok) ? tok : processWord(tok, o)).join('');
+  if(o.mode === 'fit') out = fitLine(out, o);
+  return out;
+}
+function processWord(word, o){
+  if(o.mode === 'fit') return word;
+  if(o.short && countLetters(word) < 3) return word;
+  let joints = wordJoints(word);
+  if(!joints.length) return word;
+  if(o.last && isLastJointFinal(word, joints)) joints = joints.slice(0,-1);
+  if(!joints.length) return word;
+  const scored = joints.map((j,i)=>({...j, score:scoreJoint(j,i,joints.length,o)}))
+                       .sort((a,b)=>b.score-a.score);
+  let chosen;
+  if(o.mode === 'logo') chosen = [scored[0]];
+  else {
+    const n = Math.max(1, Math.round(joints.length * o.coverage/100));
+    chosen = scored.slice(0,n);
+  }
+  return insertAt(word, chosen.map(c=>c.idx), o.intensity);
+}
+function isLastJointFinal(word, joints){
+  const chars=[...word];
+  let lastLetter=-1;
+  for(let i=chars.length-1;i>=0;i--){ if(isArabicLetter(chars[i])){lastLetter=i;break;} }
+  return joints.length && joints[joints.length-1].idx === lastLetter;
+}
+function insertAt(word, idxs, len){
+  const chars=[...word], set=new Set(idxs);
+  let out='';
+  chars.forEach((ch,i)=>{ if(set.has(i)) out += TATWEEL.repeat(len); out += ch; });
+  return out;
+}
+function fitLine(line, o){
+  const target = o.fitWidth;
+  let cur = [...line].length;
+  if(cur >= target) return line;
+  const tokens = line.split(/(\s+)/);
+  const allJoints = [];
+  tokens.forEach((tok,ti)=>{
+    if(/^\s*$/.test(tok)) return;
+    if(o.short && countLetters(tok) < 3) return;
+    let js = wordJoints(tok);
+    if(o.last && js.length && isLastJointFinal(tok, js)) js = js.slice(0,-1);
+    js.forEach((j,i)=> allJoints.push({ti, idx:j.idx, score:scoreJoint(j,i,js.length,o), count:0}));
+  });
+  if(!allJoints.length) return line;
+  allJoints.sort((a,b)=>b.score-a.score);
+  let need = target - cur, k = 0;
+  while(need-- > 0){ allJoints[k % allJoints.length].count++; k++; }
+  const byToken = {};
+  allJoints.forEach(j=>{ (byToken[j.ti] ||= []).push(j); });
+  return tokens.map((tok,ti)=>{
+    const js = byToken[ti]; if(!js) return tok;
+    const chars=[...tok]; let out='';
+    chars.forEach((ch,i)=>{
+      const j = js.find(x=>x.idx===i);
+      if(j && j.count) out += TATWEEL.repeat(j.count);
+      out += ch;
+    });
+    return out;
+  }).join('');
+}
+
+/* ---------- state & UI ---------- */
+const S = { mode:'logo', intensity:4, coverage:35, fitWidth:40,
+            seat:true, short:true, last:true, highlight:true };
+let frozen = {};
+
+const $ = id => document.getElementById(id);
+const input=$('input'), preview=$('preview'), beforeRow=$('beforeRow');
+
+const hints = {
+  logo:'Logo: one dramatic stretch per word — classic calligraphic emphasis.',
+  balance:'Balance: distributes elongation across joints, controlled by coverage.',
+  fit:'Fit: pads each line with kashidas until it hits the target measure.'
+};
+
+function paint(out){
+  preview.style.fontFamily=$('fontSel').value;
+  preview.style.fontSize=$('fontSize').value+'px';
+  preview.classList.toggle('hide-highlight', !S.highlight);
+  preview.innerHTML='';
+  out.split('\n').forEach((line,li)=>{
+    const div=document.createElement('div');
+    const chars=[...line];
+    chars.forEach((ch,i)=>{
+      const sp=document.createElement('span');
+      sp.textContent=ch;
+      if(ch===TATWEEL){ sp.className='kashida joint'; sp.dataset.act='remove'; }
+      else{
+        const next=chars.slice(i+1).find(c=>c!==TATWEEL);
+        if(next && canJoin(ch,next)){ sp.className='joint'; sp.dataset.act='add'; }
+      }
+      sp.dataset.line=li; sp.dataset.pos=i;
+      div.appendChild(sp);
+    });
+    preview.appendChild(div);
+  });
+  beforeRow.textContent=input.value;
+  beforeRow.style.fontFamily=$('fontSel').value;
+  $('stKash').textContent=(out.match(new RegExp(TATWEEL,'g'))||[]).length;
+  $('stChars').textContent=[...out].length;
+  $('stManual').textContent=Object.keys(frozen).length;
+}
+function currentOut(){
+  const auto = process(input.value, S).split('\n');
+  return auto.map((l,i)=> frozen[i]!==undefined ? frozen[i] : l).join('\n');
+}
+function refresh(){ paint(currentOut()); }
+
+/* manual click editing */
+preview.addEventListener('click', e=>{
+  const sp=e.target.closest('span'); if(!sp||!sp.dataset.act) return;
+  const li=+sp.dataset.line, pos=+sp.dataset.pos;
+  const lines = currentOut().split('\n');
+  let chars=[...lines[li]];
+  if(sp.dataset.act==='remove'){
+    let s=pos, t=pos;
+    while(s>0 && chars[s-1]===TATWEEL) s--;
+    while(t<chars.length-1 && chars[t+1]===TATWEEL) t++;
+    chars.splice(s, t-s+1);
+  } else {
+    chars.splice(pos+1, 0, ...TATWEEL.repeat(S.intensity));
+  }
+  frozen[li]=chars.join('');
+  refresh();
+});
+
+/* wiring */
+$('modeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  S.mode=b.dataset.mode;
+  $('modeHint').textContent=hints[S.mode];
+  $('fitField').style.display = S.mode==='fit' ? 'block':'none';
+  frozen={}; refresh();
+});
+const bind=(id,key,isPct)=>{ $(id).addEventListener('input',()=>{
+  S[key]=+$(id).value;
+  const v=$(id+'Val'); if(v) v.textContent=$(id).value+(isPct?'%':'');
+  frozen={}; refresh();
+});};
+bind('intensity','intensity'); bind('coverage','coverage',true);
+$('fitWidth').addEventListener('input',()=>{S.fitWidth=+$('fitWidth').value; frozen={}; refresh();});
+$('fontSize').addEventListener('input',()=>{$('fontSizeVal').textContent=$('fontSize').value; refresh();});
+$('fontSel').addEventListener('change',()=>{ syncGallery(); refresh(); });
+['ruleSeat','ruleShort','ruleLast','highlight'].forEach(id=>{
+  $(id).addEventListener('change',()=>{
+    S.seat=$('ruleSeat').checked; S.short=$('ruleShort').checked;
+    S.last=$('ruleLast').checked; S.highlight=$('highlight').checked;
+    frozen={}; refresh();
+  });
+});
+input.addEventListener('input',()=>{frozen={}; refresh();});
+
+document.querySelectorAll('.presets button').forEach(b=>b.addEventListener('click',()=>{
+  const p=b.dataset.preset;
+  const set=(mode,inten,cov)=>{
+    S.mode=mode; S.intensity=inten; S.coverage=cov;
+    document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('active',x.dataset.mode===mode));
+    $('modeHint').textContent=hints[mode];
+    $('fitField').style.display=mode==='fit'?'block':'none';
+    $('intensity').value=inten; $('intensityVal').textContent=inten;
+    $('coverage').value=cov; $('coverageVal').textContent=cov+'%';
+  };
+  if(p==='subtle') set('balance',2,20);
+  if(p==='balanced') set('balance',3,45);
+  if(p==='dramatic') set('balance',6,70);
+  if(p==='logotype') set('logo',9,35);
+  frozen={}; refresh();
+}));
+
+$('compareBtn').addEventListener('click',()=>beforeRow.classList.toggle('show'));
+$('resetManual').addEventListener('click',()=>{frozen={}; refresh();});
+$('copyBtn').addEventListener('click',async()=>{
+  const out=currentOut();
+  try{ await navigator.clipboard.writeText(out); }
+  catch(_){ const t=document.createElement('textarea'); t.value=out; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+  const toast=$('toast'); toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1600);
+});
+
+/* quick font gallery — favorites */
+const favs = [
+  ["'Noto Naskh Arabic',serif","Naskh"],
+  ["'Amiri',serif","Amiri"],
+  ["'Cairo',sans-serif","Cairo"],
+  ["'Reem Kufi',sans-serif","Reem Kufi"],
+  ["'Tajawal',sans-serif","Tajawal"],
+  ["'El Messiri',sans-serif","El Messiri"],
+  ["'Lalezar',cursive","Lalezar"],
+  ["'Rakkas',cursive","Rakkas"],
+  ["'Jomhuria',cursive","Jomhuria"],
+  ["'Changa',sans-serif","Changa"],
+  ["'Readex Pro',sans-serif","Readex"],
+  ["'Aref Ruqaa',serif","Ruqaa"],
+  ["'Scheherazade New',serif","Scheherazade"],
+  ["'Noto Kufi Arabic',sans-serif","Noto Kufi"],
+  ["'Almarai',sans-serif","Almarai"],
+  ["'Mirza',cursive","Mirza"],
+];
+const gal=$('gallery');
+favs.forEach(([val,name])=>{
+  const b=document.createElement('button');
+  b.style.fontFamily=val;
+  b.innerHTML='كـشيدة<small>'+name+'</small>';
+  b.dataset.val=val;
+  b.addEventListener('click',()=>{ $('fontSel').value=val; syncGallery(); refresh(); });
+  gal.appendChild(b);
+});
+function syncGallery(){
+  const cur=$('fontSel').value;
+  gal.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.val===cur));
+}
+
+syncGallery(); refresh();
+})();
+</script>
+</body>
+</html>
