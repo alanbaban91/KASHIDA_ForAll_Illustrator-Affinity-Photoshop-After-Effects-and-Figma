@@ -1,4 +1,4 @@
-# Kashida for All
+# Kashida Plus
 
 **A rule-based elongation engine for Arabic & Kurdish Sorani typography.**
 
